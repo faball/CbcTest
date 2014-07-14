@@ -15,6 +15,7 @@ namespace ICCalib{
 	class ScurveHistogramFrame;
 	class DataStreamFrame;
 	class VplusVsVCth0GraphFrame;
+	class GainGraphFrame; //fb
 
 	class CalibratorFrame : public GUIFrame {
 
@@ -32,12 +33,18 @@ namespace ICCalib{
 			Calibrator *GetCalibrator(){ return fCalibrator; }
 			ClassDef( CalibratorFrame, 0 );
 
+			void DoDelayScan(); //fb
+			static void DoDelayScan( void *p );//fb
+
 		private:
 			TThread *fThreadCalib;
 			TThread *fThreadVCthScan;
+			TThread *fThreadDelayScan;//fb
 			Calibrator *fCalibrator;
 			CalibrationConfigurationFrame   *fCalibConfigFrame;
 			VplusVsVCth0GraphFrame          *fVplusVsVCth0GraphFrame;
+			GainGraphFrame					*fGainGraphFrame;
+
 			ScurveHistogramFrame            *fScurveHistogramFrame;
 			DataStreamFrame                 *fDataStreamFrame;
 	};

@@ -25,7 +25,7 @@ using namespace CbcDaq;
 #define I2C_COMMAND			"user_wb_ttc_fmc_regs.cbc_reg_i2c_command"
 #define I2C_REPLY			"user_wb_ttc_fmc_regs.cbc_reg_i2c_reply"
 
-#define MAX_NB_LOOP			50	
+#define MAX_NB_LOOP			100
 
 namespace Strasbourg{
 
@@ -378,7 +378,7 @@ namespace Strasbourg{
 			fBoard->dispatch();
 
 			if (cVal!=pAckVal){
-				std::cout << "Waiting for the I2c command acknowledge to be " << pAckVal << " for " << pNcount << " registers." << std::endl;	
+				//std::cout << "Waiting for the I2c command acknowledge to be " << pAckVal << " for " << pNcount << " registers." << std::endl;
 				//sleep(5);
 				usleep( cWait );
 			}	

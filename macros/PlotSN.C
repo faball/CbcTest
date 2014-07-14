@@ -2,7 +2,7 @@ void PlotSN( Char_t *fname, Char_t *hname0, Char_t *option , UInt_t pBeId = 0, U
 
 	TH1F *h0 = new TH1F( hname0, ";V_{CTH} middle point pedestal subtracted / pedestal width;count", 150, -50, 0 );
 	TFile *fin = new TFile( fname );
-	TFile *fped = new TFile( "/Users/kirika/Work/CMS_UPGRADE/eps_calib/VCthScanCalibrationResult.root" );
+	TFile *fped = new TFile( "/home/xtaldaq/cbc/CbcTest/results/test/VCthScanCalibrationResult.root" );
 	for( UInt_t i=0; i<254; i++ ){
 		TString hname = Form( "h_00_%02d_%03d", pCbc, i );
 		TH1F *h = (TH1F *) fin->Get( hname );

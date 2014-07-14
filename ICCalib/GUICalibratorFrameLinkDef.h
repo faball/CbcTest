@@ -6,5 +6,6 @@
 #pragma link C++ class ICCalib::VplusVsVCth0GraphFrame;
 #pragma link C++ class ICCalib::DataStreamFrame;
 #pragma link C++ class ICCalib::CalibratorFrame;
+#pragma link C++ class ICCalib::GainGraphFrame; //fb
 #endif
 

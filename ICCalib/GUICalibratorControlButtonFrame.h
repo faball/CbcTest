@@ -12,7 +12,7 @@ namespace ICCalib {
 	class CalibratorControlButtonFrame : public ControlButtonFrame {
 
 		public:
-			enum CalibState { VCthScanRunning, CalibrationRunning };
+			enum CalibState { VCthScanRunning, CalibrationRunning, DelayScanRunning }; //fb
 
 		public:
 			CalibratorControlButtonFrame( TGCompositeFrame *pFrame, CalibratorFrame *pCalibratorFrame );
@@ -27,6 +27,7 @@ namespace ICCalib {
 			void addProcessButtons();
 			TGTextButton *fCalibrationButton;
 			TGTextButton *fVCthScanButton;
+			TGTextButton *fDelayScanButton; //fb
 	};
 }
 #endif

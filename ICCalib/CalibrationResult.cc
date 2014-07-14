@@ -14,6 +14,15 @@ namespace ICCalib{
 		if( cIt == fGraphVplusVCth0.end() ) return 0;
 		return cIt->second;
 	}
+
+	TGraphErrors *CbcInfo::GetGraphGain( UInt_t pGroupId ){
+		std::map<UInt_t, TGraphErrors *>::iterator cIt = fGraphGain.find( pGroupId );
+		if( cIt == fGraphGain.end() ) {
+			return 0;
+		}
+		return cIt->second;
+	}
+
 	void CbcInfo::AddChannel( UInt_t pChannelId, Channel * pChannel ){ 
 
 		this->insert( std::pair<UInt_t, Channel *>( pChannelId, pChannel ) );
@@ -22,10 +31,22 @@ namespace ICCalib{
 
 		fGraphVplusVCth0.insert( std::pair< UInt_t, TGraphErrors *>( pGroup, pGraph ) );
 	}
+
+	void CbcInfo::AddGraphGain( UInt_t pGroup, TGraphErrors *pGraph ){ //fb
+
+		fGraphGain.insert( std::pair< UInt_t, TGraphErrors *>( pGroup, pGraph ) );
+	}
+
 	void CbcInfo::SetVplusVsVCth0GraphDisplayPad( TPad *pPad ){
 
 		fVplusVsVCth0GraphDisplayPad = pPad;
 	}
+
+	void CbcInfo::SetGainGraphDisplayPad( TPad *pPad ){ //fb
+
+		fGainGraphDisplayPad = pPad;
+	}
+
 	void CbcInfo::SetScurveHistogramDisplayPad( UInt_t pGroupId, TPad *pPad ){ 
 
 		fScurveHistogramDisplayPad.insert( std::pair< UInt_t, TPad *>( pGroupId, pPad ) );
@@ -66,6 +87,14 @@ namespace ICCalib{
 			cCbcInfo->AddGraphVplusVCth0( pGroupId, pG );
 		}
 	}
+
+	void FeInfo::AddGraphGain( UInt_t pCbcId, UInt_t pGroupId, TGraphErrors *pG ){ //fb
+			CbcInfo *cCbcInfo = getCbcInfo( pCbcId );
+			if( cCbcInfo != 0 ){
+				cCbcInfo->AddGraphGain( pGroupId, pG );
+			}
+		}
+
 	void FeInfo::SetScurveHistogramDisplayPad( UInt_t pCbcId, UInt_t pGroupId, TPad *pPad ){
 
 		CbcInfo *cCbcInfo = getCbcInfo( pCbcId );
@@ -80,6 +109,15 @@ namespace ICCalib{
 			cCbcInfo->SetVplusVsVCth0GraphDisplayPad( pPad );
 		}
 	}
+
+	void FeInfo::SetGainGraphDisplayPad( UInt_t pCbcId, TPad *pPad ){ //fb
+
+		CbcInfo *cCbcInfo = getCbcInfo( pCbcId );
+		if( cCbcInfo ){
+			cCbcInfo->SetGainGraphDisplayPad( pPad );
+		}
+	}
+
 	void FeInfo::SetDummyPad( UInt_t pCbcId, TPad *pPad ){
 
 		CbcInfo *cCbcInfo = getCbcInfo( pCbcId );
@@ -155,6 +193,15 @@ namespace ICCalib{
 			cFeInfo->SetVplusVsVCth0GraphDisplayPad( pCbcId, pPad );
 		}
 	}
+
+	void CalibrationResult::SetGainGraphDisplayPad( UInt_t pFeId, UInt_t pCbcId, TPad *pPad ){ //fb
+
+		FeInfo *cFeInfo = getFeInfo( pFeId );
+		if( cFeInfo ){
+			cFeInfo->SetGainGraphDisplayPad( pCbcId, pPad );
+		}
+	}
+
 	void CalibrationResult::SetScurveHistogramDisplayPad( UInt_t pFeId, UInt_t pCbcId, UInt_t pGroupId, TPad *pPad ){
 
 		FeInfo *cFeInfo = getFeInfo( pFeId );
@@ -162,6 +209,15 @@ namespace ICCalib{
 			cFeInfo->SetScurveHistogramDisplayPad( pCbcId, pGroupId, pPad );
 		}
 	}
+
+	void CalibrationResult::AddGraphGain( UInt_t pFeId, UInt_t pCbcId, UInt_t pGroupId, TGraphErrors *pG ){
+
+			FeInfo *cFeInfo = getFeInfo( pFeId );
+			if( cFeInfo != 0 ){
+				cFeInfo->AddGraphGain( pCbcId, pGroupId, pG );
+			}
+		}
+
 	void CalibrationResult::SetDummyPad( UInt_t pFeId, UInt_t pCbcId, TPad *pPad ){
 
 		FeInfo *cFeInfo = getFeInfo( pFeId );

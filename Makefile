@@ -12,8 +12,8 @@ CbcDaq::
 	+(cd $@; make)
 src::
 	+(cd $@; make)
-doc::
-	+(cd $@; make)
+#doc::
+#	+(cd $@; make)
 
 		
 clean:

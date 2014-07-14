@@ -57,11 +57,15 @@ namespace ICCalib{
 			CbcInfo( UInt_t pFeId, UInt_t pCbcId ): std::map<UInt_t, Channel *>(), 
 			fFeId(pFeId), fCbcId(pCbcId), fGraphVplusVCth0(), fVplus(0),
 			fVplusVsVCth0GraphDisplayPad(0),
+			fGraphGain(),//fb
+			fGainGraphDisplayPad(0),//fb
 			fDummyPad(0){}
 			CbcInfo(const CbcInfo &pC): std::map<UInt_t, Channel *>(pC), 
 			fFeId(pC.fFeId), fCbcId(pC.fCbcId), fGraphVplusVCth0(pC.fGraphVplusVCth0), fVplus(pC.fVplus),
 			fScurveHistogramDisplayPad(pC.fScurveHistogramDisplayPad),
 			fVplusVsVCth0GraphDisplayPad(pC.fVplusVsVCth0GraphDisplayPad),
+			fGraphGain(pC.fGraphGain),//fb
+			fGainGraphDisplayPad(pC.fGainGraphDisplayPad),//fb
 			fDummyPad(pC.fDummyPad){}
 			~CbcInfo(){}
 
@@ -70,16 +74,21 @@ namespace ICCalib{
 			const Channel * GetChannel( UInt_t pChannelId )const;
 			std::map<UInt_t, TGraphErrors *> * GetGraphVplusVCth0(){ return &fGraphVplusVCth0; }
 			TGraphErrors *GetGraphVplusVCth0( UInt_t pGroupId );
+			std::map<UInt_t, TGraphErrors *> * GetGraphGain(){ return &fGraphGain; }
+			TGraphErrors *GetGraphGain( UInt_t pGroupId ); //fb
 			UInt_t Vplus()const{ return fVplus; }
 			TPad *GetVplusVsVCth0GraphDisplayPad(){ return fVplusVsVCth0GraphDisplayPad; }
+			TPad *GetGainGraphDisplayPad(){ return fGainGraphDisplayPad; }
 			TPad *GetScurveHistogramDisplayPad( UInt_t pGroupId ){ return fScurveHistogramDisplayPad.find( pGroupId )->second; }
 			TPad *GetDummyPad(){ if( fDummyPad == 0 ) fDummyPad =
                         new TCanvas( Form( "cFE%dCBC%d", fFeId, fCbcId ), Form( "cFE%dCBC%d", fFeId, fCbcId ), 100, 100 ); return fDummyPad; }
 
 			void AddChannel( UInt_t pChannelId, Channel * pChannel );
 			void AddGraphVplusVCth0( UInt_t pGroup, TGraphErrors *pGraph );
+			void AddGraphGain( UInt_t pGroup, TGraphErrors *pGraph );//fb
 			void SetVplus( UInt_t pValue ){ fVplus = pValue; }
 			void SetVplusVsVCth0GraphDisplayPad( TPad *pPad );
+			void SetGainGraphDisplayPad( TPad *pPad );//fb
 			void SetScurveHistogramDisplayPad( UInt_t pGroupId, TPad *pPad ); 
 			void SetDummyPad( TPad *pPad ){ fDummyPad = pPad; }
 		private:
@@ -89,7 +98,12 @@ namespace ICCalib{
 			UInt_t                           fVplus;
 			std::map<UInt_t, TPad *>         fScurveHistogramDisplayPad;
 			TPad                             *fVplusVsVCth0GraphDisplayPad;
+
+			std::map<UInt_t, TGraphErrors *> fGraphGain;//fb
+			TPad                             *fGainGraphDisplayPad; //fb
 			TPad                             *fDummyPad;
+
+
 	};
 
 	class FeInfo: public std::map<UInt_t, CbcInfo>{ 
@@ -106,8 +120,10 @@ namespace ICCalib{
 			void AddCbcInfo( UInt_t pCbcId, CbcInfo pCbcInfo ); 
 			void AddChannel( UInt_t pCbcId, UInt_t pChannelId, Channel* pChannel ); 
 			void AddGraphVplusVCth0( UInt_t pCbcId, UInt_t pGroupId, TGraphErrors *pG );
+			void AddGraphGain( UInt_t pCbcId, UInt_t pGroupId, TGraphErrors *pG ); //fb
 			void SetScurveHistogramDisplayPad( UInt_t pCbcId, UInt_t pGroupId, TPad *pPad );
 			void SetVplusVsVCth0GraphDisplayPad( UInt_t pCbcId, TPad *pPad );
+			void SetGainGraphDisplayPad( UInt_t pCbcId, TPad *pPad ); //fb
 			void SetDummyPad( UInt_t pCbcId, TPad *pPad );
 		private:
 			CbcInfo *getCbcInfo( UInt_t pCbcId );
@@ -131,6 +147,8 @@ namespace ICCalib{
 			void AddChannel( UInt_t pFeId, UInt_t pCbcId, UInt_t pChannelId, Channel *pChannel ); 
 			void AddGraphVplusVCth0( UInt_t pFeId, UInt_t pCbcId, UInt_t pGroupId, TGraphErrors *pG );
 			void SetVplusVsVCth0GraphDisplayPad( UInt_t pFeId, UInt_t pCbcId, TPad *pPad );
+			void AddGraphGain( UInt_t pFeId, UInt_t pCbcId, UInt_t pGroupId, TGraphErrors *pG ); //fb
+			void SetGainGraphDisplayPad( UInt_t pFeId, UInt_t pCbcId, TPad *pPad );//fb
 			void SetScurveHistogramDisplayPad( UInt_t pFeId, UInt_t pCbcId, UInt_t pGroupId, TPad *pPad );
 			void SetDummyPad( UInt_t pFeId, UInt_t pCbcId, TPad *pPad );
 		private:

@@ -52,10 +52,15 @@ int main( int argc, char *argv[] ){
 	daq.ConfigureGlib();
 
 	daq.ConfigureCbc();
+	daq.ConfigureCbc();
 
 	daq.ConfigureAnalyser();
 
-	daq.VCthScanForAllGroups();
+	daq.ScanTestPulseDelay();
+
+	//daq.VCthScanForAllGroups();
+
+	//daq.GainTest(); //fb
 
 }
 

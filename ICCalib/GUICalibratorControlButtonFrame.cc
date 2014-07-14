@@ -19,6 +19,12 @@ namespace ICCalib{
 		AddFrame( fVCthScanButton, new TGLayoutHints( kLHintsCenterX, 5, 5, 3, 4 ) );
 		fMainControlButtons.push_back( fVCthScanButton );
 		fProcessButtons.push_back( fVCthScanButton );
+
+		fDelayScanButton = new TGTextButton( this, "&DelayScan" ); //fb
+		fDelayScanButton->Connect( "Clicked()", "ICCalib::CalibratorFrame", fGUIFrame, "DoDelayScan()" );
+		AddFrame( fDelayScanButton, new TGLayoutHints( kLHintsCenterX, 5, 5, 3, 4 ) );
+		fMainControlButtons.push_back( fDelayScanButton );
+		fProcessButtons.push_back( fDelayScanButton );
 	}
 
 	void CalibratorControlButtonFrame::SetCalibButtonState( CalibState pState ){ 
@@ -42,6 +48,15 @@ namespace ICCalib{
 				fCalibrationButton->SetState( kButtonDisabled );
 				gClient->NeedRedraw( fCalibrationButton );
 				break;
+
+			case DelayScanRunning : //fb
+
+				gClient->GetColorByName( "green", cColor );
+				fDelayScanButton->SetBackgroundColor( cColor );
+				fDelayScanButton->SetState( kButtonDisabled );
+				gClient->NeedRedraw( fDelayScanButton );
+				break;
+
 			default:
 				break;
 		}

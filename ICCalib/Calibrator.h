@@ -82,16 +82,20 @@ namespace ICCalib{
 
 			void SetVplusVsVCth0GraphDisplayPad( UInt_t pFeId, TPad *pPad );
 			void SetScurveHistogramDisplayPad( UInt_t pFeId, UInt_t pCbcId, TPad *pPad );
+			void SetGainGraphDisplayPad(UInt_t pFeId, TPad *pPad);//fb
 			void ReadSettingFile( const char *pFname );
 
 			//functions used internally for a moment.
 			Int_t GetDataStreamHistId( UInt_t pFeId, UInt_t pCbcId );
 			void FindVplus();
+			void FindGain();//fb
 			void CalibrateOffsets();
 
 			void ConfigureVplusScan( UInt_t pVplus );
 			void ActivateGroup( UInt_t pGroupId );
 			void ConfigureCbcOffset( Int_t pTargetOffsetBit, UInt_t &pMinVCth, UInt_t &pMaxVCth );
+
+			void GainScan();
 
 			void VCthScanForVplusCalibration( UInt_t pVplus ); 
 			void VCthScanForOffsetCalibration( Int_t pTargetBit ); 
@@ -100,7 +104,11 @@ namespace ICCalib{
 			void PrintScurveHistogramDisplayPads();
 			void DrawVplusVCthScanResult();
 			void PrintVplusScan();
+			void DrawGainScanResult();
+			void PrintGainScan();
 			void SetCalibratedOffsets();
+
+			void ScanTestPulseDelay();
 
 		private:
 			void initialiseSetting();

@@ -44,6 +44,19 @@ namespace ICCalib{
 			GUIFrame         *fGUIFrame;
 			TGTab            *fFrame;
 	};
+
+	class GainGraphFrame : public TGCompositeFrame { //fb
+
+		public:
+			GainGraphFrame( TGCompositeFrame *pFrame, CalibratorFrame *pCalibratorFrame );
+			~GainGraphFrame(){}
+			void RenewFrame();
+			ClassDef( GainGraphFrame, 0 );
+		private:
+			TGCompositeFrame *fMotherFrame;
+			CalibratorFrame  *fCalibratorFrame;
+			TGTab            *fFrame;
+	};
 }
 #endif
 

@@ -18,9 +18,11 @@ namespace ICCalib{
 		GUIFrame( p, w, h, pWindowName, pCalibrator ),
 		fThreadCalib(0), 
 		fThreadVCthScan(0),
+		fThreadDelayScan(0),//fb
 		fCalibrator( pCalibrator ),
 		fCalibConfigFrame(0),
 		fVplusVsVCth0GraphFrame(0),
+		fGainGraphFrame(0), //fb
 		fScurveHistogramFrame(0),
 		fDataStreamFrame(0){
 		}
@@ -38,6 +40,9 @@ namespace ICCalib{
 
 		cTabFrame = pTab->AddTab( "Data" );
 		fDataStreamFrame = new DataStreamFrame( cTabFrame, this );
+
+		cTabFrame = pTab->AddTab( "Gain Graph" ); //fb
+		fGainGraphFrame = new GainGraphFrame( cTabFrame, this );
 	}
 	void CalibratorFrame::AddControlButtonFrame(){
 		//Controll button frame
@@ -69,6 +74,7 @@ namespace ICCalib{
 		fVplusVsVCth0GraphFrame->RenewFrame();
 		fScurveHistogramFrame->RenewFrame();
 		fDataStreamFrame->RenewFrame();
+		fGainGraphFrame->RenewFrame();//fb
 
 		fControlButtonFrame->SetButtonState( ControlButtonFrame::AnalyserConfigured );
 	}
@@ -102,5 +108,21 @@ namespace ICCalib{
 		CalibratorFrame *obj = (CalibratorFrame *)p;
 		obj->fCalibrator->Calibrate();
 	}
+
+	void CalibratorFrame::DoDelayScan(){ //fb
+
+			fControlButtonFrame->SetButtonState( ControlButtonFrame::Running );
+			( ( CalibratorControlButtonFrame *) fControlButtonFrame )->SetCalibButtonState( CalibratorControlButtonFrame::DelayScanRunning );
+
+			if( fThreadDelayScan ) fThreadDelayScan->Delete();
+			fThreadDelayScan = new TThread( "delayscan", CalibratorFrame::DoDelayScan, this );
+			fThreadDelayScan->Run();
+		}
+	void CalibratorFrame::DoDelayScan( void *p ){
+
+			CalibratorFrame *obj = (CalibratorFrame *) p;
+			obj->fCalibrator->ScanTestPulseDelay();
+
+		}
 }
 

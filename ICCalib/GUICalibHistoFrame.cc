@@ -117,6 +117,44 @@ namespace ICCalib{
 		MapSubwindows();
 		Layout();
 	}
+
+
+///fb
+	GainGraphFrame::GainGraphFrame( TGCompositeFrame *pFrame, CalibratorFrame *pCalibratorFrame ):
+		TGCompositeFrame( pFrame, gMainFrameWidth, gMainFrameHeight ),
+		fMotherFrame( pFrame ),
+		fCalibratorFrame( pCalibratorFrame ){
+
+			fMotherFrame->AddFrame( this, gLHVexpand );
+		}
+
+	void GainGraphFrame::RenewFrame(){
+
+		if( fFrame ){
+			RemoveFrame( fFrame );
+			fFrame->DestroyWindow();
+			delete fFrame;
+		}
+		fFrame = new TGTab( this, gMainFrameWidth, gMainFrameHeight );
+		AddFrame( fFrame, gLHVexpand );
+
+		UInt_t cNFe = fCalibratorFrame->GetDAQController()->GetNFe();
+
+		for( UInt_t cFeId = 0; cFeId < cNFe; cFeId++ ){
+
+		   TGCompositeFrame *cFeFrame = fFrame->AddTab( Form( "FE%u", cFeId ) );
+		   TRootEmbeddedCanvas *cEcanvas = new TRootEmbeddedCanvas( Form( "GainEcanvasFe%u", cFeId ), cFeFrame, gMainFrameWidth, 600 );
+		   cFeFrame->AddFrame( cEcanvas, new TGLayoutHints( kLHintsExpandX | kLHintsExpandY, 10, 10, 10, 1 ) );
+		   TCanvas *cCanvas = cEcanvas->GetCanvas();
+
+			fCalibratorFrame->GetCalibrator()->SetGainGraphDisplayPad( cFeId, cCanvas );
+
+		}
+		MapSubwindows();
+		Layout();
+	}
+	////fb
+
 }
 
 

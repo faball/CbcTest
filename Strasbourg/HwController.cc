@@ -217,6 +217,19 @@ namespace Strasbourg{
 			}
 		}
 	}
+
+	void HwController::AddCbcRegUpdateItemsForNewTestPulseDelay( unsigned int pDel ){ //fb
+
+			uint32_t cAddr(0x0E), cValue(pDel );
+			for( unsigned int cFe=0; cFe < fNFe; cFe++ ){
+
+				for( unsigned int cCbc=0; cCbc < fNCbc; cCbc++ ){
+
+					AddCbcRegUpdateItem( cFe, cCbc, 0, cAddr, cValue );
+				}
+			}
+		}
+
 	//clear the CbcRegUpdateList and get the list of corresponding CbcRegItem's (So that GUI can retrieve the original values) 
 	std::vector<const CbcRegItem *> HwController::ResetCbcRegUpdateList(){
 

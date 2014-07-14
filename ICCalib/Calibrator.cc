@@ -225,6 +225,14 @@ namespace ICCalib{
 			fScurveAnalyser->SetScurveHistogramDisplayPad( pFeId, pCbcId, pPad );
 		}
 	}
+
+	void Calibrator::SetGainGraphDisplayPad( UInt_t pFeId, TPad *pPad ){ //fb
+
+			if( fScurveAnalyser ){
+				fScurveAnalyser->SetGainGraphDisplayPad( pFeId, pPad );
+			}
+		}
+
 	void Calibrator::ReadSettingFile( const char *pFname ){
 
 		DAQController::ReadSettingFile( pFname );
@@ -275,6 +283,28 @@ namespace ICCalib{
 		if( fStop ) return;
 		fScurveAnalyser->SetVplus();
 		PrintVplusScan();
+		return;
+	}
+
+	void Calibrator::FindGain(){
+		fScurveAnalyser->SetOffsets( fCalibSetting.find( "TargetOffset" )->second );
+
+		for( UInt_t cTestGroup=0; cTestGroup<fTestGroupMap->size(); cTestGroup++ ){
+
+			ActivateGroup( cTestGroup );
+
+			UInt_t cMinVCth(0), cMaxVCth(0xFF);
+			ConfigureCbcOffset( 8, cMinVCth, cMaxVCth );
+
+			GainScan();
+
+			if( fStop ) break;
+			TString msg = Form( "\tFindGain TestGroup = %d finished.", cTestGroup );
+			Emit( "Message( const char * )", msg.Data() );
+		}
+		if( fStop ) return;
+		fScurveAnalyser->SetGain();
+		PrintGainScan();
 		return;
 	}
 
@@ -388,6 +418,13 @@ namespace ICCalib{
 		return;
 	}
 
+	void Calibrator::GainScan(){ //fb
+
+		//if( fGUIFrame ) fScurveAnalyser->DrawHists();
+					fScurveAnalyser->FillGraphGain();
+					if( fGUIFrame ) DrawGainScanResult();
+	}
+
 	void Calibrator::VCthScanForVplusCalibration( UInt_t pVplus ){
 
 
@@ -465,7 +502,7 @@ namespace ICCalib{
 			UpdateCbcRegValues();
 
 			int cNHits(0);
-			for( int i=0; i< fNAcq; i++ ){
+			for(unsigned int i=0; i< fNAcq; i++ ){
 				fHwController->StartAcquisition();
 				fHwController->ReadDataInSRAM( cNthAcq, true );
 				fHwController->EndAcquisition( cNthAcq );
@@ -547,6 +584,16 @@ namespace ICCalib{
 		fScurveAnalyser->PrintVplusVsVCth0DisplayPads();
 	}
 
+	void Calibrator::DrawGainScanResult(){
+
+		fScurveAnalyser->DrawGain();
+	}
+
+	void Calibrator::PrintGainScan(){
+
+		fScurveAnalyser->PrintGainDisplayPads();
+	}
+
 	void Calibrator::SetCalibratedOffsets(){
 
 		uint32_t cPage(1);
@@ -566,6 +613,62 @@ namespace ICCalib{
 		}
 		UpdateCbcRegValues();
 	}
+
+	void Calibrator::ScanTestPulseDelay(){
+		//keeps channel group constant, only changing the delay select
+
+		Emit( "Message( const char * )", "Starting Delay Scan" );
+		UInt_t cMinDelay(0x8), cMaxDelay(0x20), cDelay(0), cDelayStep(0x01), cChannelGroup(0x05); //channel group should not be changed
+
+		for (cDelay = cMinDelay; cDelay<cMaxDelay;){ //5 bits wide
+
+				UInt_t reg  (0);
+				reg = (cDelay<<3) | cChannelGroup; //appends the channel group for total of 8 bits
+
+				Emit( "Message( const char *)", Form( "\tTest Pulse Delay = %d ", cDelay ) );
+				//Emit( "Message( const char *)", Form( "(Real Delay and Test Pulse reg value: %d) ", reg ) );
+
+				fHwController->AddCbcRegUpdateItemsForNewTestPulseDelay(reg);
+				fStop = false;
+
+				Int_t cTargetBit = 8;
+
+				fScurveAnalyser->SetOffsets();
+
+				for( UInt_t cTestGroup=0; cTestGroup<fTestGroupMap->size(); cTestGroup++ ){
+
+					ActivateGroup( cTestGroup );
+					fScurveAnalyser->Configure( ScurveAnalyser::DELAYSCAN );
+					UInt_t cMinVCth(0), cMaxVCth(0xFF);
+					ConfigureCbcOffset( cTargetBit, cMinVCth, cMaxVCth );
+
+					VCthScan( cMinVCth, cMaxVCth );
+
+					if( fStop ) return;
+
+					fScurveAnalyser->FitHists( cMinVCth, cMaxVCth );
+					if( fGUIFrame ){
+						fScurveAnalyser->DrawHists();
+						fScurveAnalyser->PrintScurveHistogramDisplayPads();
+					}
+
+					Emit( "Message( const char * )", Form( "\tVCthScan for TestGroup = %d finished.", cTestGroup ) );
+				}
+
+				FindGain();
+				if( fStop ) return;
+
+			UpdateCbcRegValues();
+			SetCalibratedOffsets();
+			cDelay = cDelay+cDelayStep;
+			}
+
+		Emit( "Message( const char * )", "FinishedVCthScan");
+		Emit( "Message( const char * )", "Finished Delay Scan" );
+		return;
+
+	}
+
 	/*
 	   void Calibrator::InitialiseDataStreamHistograms(){
 

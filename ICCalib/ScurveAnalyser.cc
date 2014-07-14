@@ -23,7 +23,7 @@ namespace ICCalib{
 		return fitval;
 	}
 	ScurveAnalyser::ScurveAnalyser( 
-			UInt_t pBeId, UInt_t pNFe, UInt_t pNCbc, 
+			UInt_t pBeId, UInt_t pNFe, UInt_t pNCbc,
 			TestGroupMap *pGroupMap, const CbcRegMap *pCbcRegMap, 
 			Bool_t pNegativeLogicCbc, UInt_t pTargetVCth, const char *pOutputDir, GUIFrame *pGUIFrame ):
 		Analyser( pBeId, pNFe, pNCbc, pCbcRegMap, pNegativeLogicCbc, pOutputDir, pGUIFrame ),
@@ -42,6 +42,7 @@ namespace ICCalib{
 			delete fChannelList[i];
 		}
 		fChannelList.clear();
+		fMidPoints.clear();//fb
 
 		TestGroupMap::iterator cIt = fGroupMap->begin(); 
 		for( ; cIt != fGroupMap->end(); cIt++ ){
@@ -52,6 +53,7 @@ namespace ICCalib{
 		fResult.clear();
 
 		fNthVplusPoint = 0;	
+
 
 		TString cName = Form( "totalBE%u", fBeId ); 
 		TObject *cObj = gROOT->FindObject( cName );
@@ -87,6 +89,8 @@ namespace ICCalib{
 					TGraphErrors *cG = new TGraphErrors( cTestGroup.size() * 10 );
 					cG->SetName( cName );
 					fResult.AddGraphVplusVCth0( cFeId, cCbcId, cIt->first, cG );
+
+					fResult.AddGraphGain( cFeId, cCbcId, cIt->first, cG ); //fb
 				}
 			}
 		}
@@ -165,6 +169,114 @@ namespace ICCalib{
 		fNthVplusPoint += cTestGroup->size();
 		return 0;
 	}
+
+	int ScurveAnalyser::FillGraphGain(){ //fb
+		UInt_t cGroupId(0);
+		TestGroup *cTestGroup = fGroupMap->GetActivatedGroup(cGroupId);
+		if( cTestGroup == 0 ) return -1;
+
+		CalibrationResult::iterator cItFe = fResult.begin();
+		for( ; cItFe != fResult.end(); cItFe++ ){
+
+			UInt_t cFeId = cItFe->first;
+			FeInfo &cFeInfo = cItFe->second;
+			FeInfo::iterator cItCbc = cFeInfo.begin();
+			for( ; cItCbc != cFeInfo.end(); cItCbc++ ){
+
+				UInt_t cCbcId = cItCbc->first;
+				CbcInfo &cCbcInfo = cItCbc->second;
+
+				TString cHtotalName =  Form( "h_FE%dCBC%dG%03d%s", cFeId, cCbcId, cGroupId, getScanId().Data() );//
+
+				TGraphErrors *cG = cCbcInfo.GetGraphGain(cGroupId);
+
+				//UInt_t cChannelId(0);
+
+				const std::vector<Channel *> *cChannelList = cTestGroup->GetChannelList();
+				UInt_t j=0;
+				for( UInt_t i=0; i < cChannelList->size(); i++ ){
+					Channel *cChannel = cChannelList->at(i);
+					if( !( cChannel->FeId() == cFeId && cChannel->CbcId() == cCbcId ) )continue;
+
+					TH1F *h = cChannel->Hist();
+
+					TF1 *cFunc = (TF1 *) h->GetListOfFunctions()->Last();
+					double cVCth0(0);
+					double cVCthError(0);
+					if( cFunc ) {
+						cVCth0 = cFunc->GetParameter(0);
+
+						cVCthError = cFunc->GetParError(0);
+					}
+					else{
+						cVCth0 = cChannel->VCth0();
+					}
+
+					UInt_t cTpPot = fCbcRegMap->GetValue( cFeId, cCbcId, 0, 0x0D );
+					cG->SetPoint( fNthVplusPoint+j, cTpPot, cVCth0  ); //n, x, y
+					cG->SetPointError( fNthVplusPoint+j, cChannel->VCth0Error(), 0 );
+					j++;
+				}
+			}
+		}
+		fNthVplusPoint += cTestGroup->size();
+		return 0;
+	}
+
+
+
+
+
+	void ScurveAnalyser::DrawGain(){
+
+		UInt_t cGroupId(0);
+		TestGroup *cTestGroup = fGroupMap->GetActivatedGroup(cGroupId);
+		if( cTestGroup == 0 ) return;
+
+		CalibrationResult::iterator cItFe = fResult.begin();
+		for( ; cItFe != fResult.end(); cItFe++ ){
+
+			UInt_t cFeId = cItFe->first;
+			FeInfo &cFeInfo = cItFe->second;
+			FeInfo::iterator cItCbc = cFeInfo.begin();
+			for( ; cItCbc != cFeInfo.end(); cItCbc++ ){
+
+				UInt_t cCbcId = cItCbc->first;
+				CbcInfo &cCbcInfo = cItCbc->second;
+				TPad *cPad = cCbcInfo.GetGainGraphDisplayPad();
+				if( cPad ){
+
+					cPad->cd();
+
+					TGraphErrors *cG = cCbcInfo.GetGraphGain(cGroupId);
+					TString cOption( "P" );
+					TString cHistName = Form( "GainScanBE%uFE%uCBC%u", fBeId, cFeId, cCbcId);
+					if( ! gROOT->FindObject( cHistName )  ) {
+						TH1F *h = new TH1F( cHistName, Form( "GainScan BE %u FE %u CBC %u;TpPot;MidPoint", fBeId, cFeId, cCbcId ), 1, 0, 260 );
+						h->SetMaximum( 260 );
+						h->GetXaxis()->SetLabelSize( 0.05 );
+						h->GetYaxis()->SetLabelSize( 0.04 );
+						h->GetXaxis()->SetTitleSize( 0.05 );
+						h->GetYaxis()->SetTitleSize( 0.05 );
+						h->GetXaxis()->SetTitleOffset( 1.0 );
+						h->GetYaxis()->SetTitleOffset( 1.0 );
+					}
+					if( cGroupId == 0 ){
+						cPad->Clear();
+						TH1F *h = (TH1F *) gROOT->FindObject( cHistName );
+						h->Draw();
+					}
+					cG->SetMarkerStyle(20);
+					cG->SetMarkerColor( cGroupId + 1 );
+					cG->SetLineColor( cGroupId + 1 );
+					cG->Draw( cOption );
+					cPad->Update();
+				}
+			}
+		}
+
+	}
+
 	void ScurveAnalyser::DrawVplusVCth0(){
 
 		UInt_t cGroupId(0);
@@ -226,7 +338,7 @@ namespace ICCalib{
 
 				UInt_t cCbcId = cItCbc->first;
 				CbcInfo &cCbcInfo = cItCbc->second;
-				TPad *cPad = cCbcInfo.GetVplusVsVCth0GraphDisplayPad();	
+				TPad *cPad = cCbcInfo.GetVplusVsVCth0GraphDisplayPad();
 				if( cPad ){
 					cPad->cd();
 					//cPad->Update();
@@ -235,6 +347,30 @@ namespace ICCalib{
 			}
 		}
 	}
+
+	void ScurveAnalyser::PrintGainDisplayPads(){
+
+		CalibrationResult::iterator cItFe = fResult.begin();
+		for( ; cItFe != fResult.end(); cItFe++ ){
+
+			UInt_t cFeId = cItFe->first;
+			FeInfo &cFeInfo = cItFe->second;
+			FeInfo::iterator cItCbc = cFeInfo.begin();
+			for( ; cItCbc != cFeInfo.end(); cItCbc++ ){
+
+				UInt_t cCbcId = cItCbc->first;
+				CbcInfo &cCbcInfo = cItCbc->second;
+				TPad *cPad = cCbcInfo.GetGainGraphDisplayPad();
+				if( cPad ){
+					cPad->cd();
+					//cPad->Update();
+					UInt_t cTpPot = fCbcRegMap->GetValue( cFeId, cCbcId, 0, 0x0D );
+					cPad->Print( Form( "%s/FE%uCBC%uTpPot0x%02X_GainScan.eps", fOutputDir.Data(), cFeId, cCbcId,cTpPot ) );
+				}
+			}
+		}
+	}
+
 	int ScurveAnalyser::FillHists( UInt_t pVcth, const Event *pEvent ){
 
 		UInt_t cGroupId(0);
@@ -439,6 +575,7 @@ namespace ICCalib{
 						double cVCthError(0);
 						if( cFunc ) {
 							cVCth0 = cFunc->GetParameter(0);
+
 							cVCthError = cFunc->GetParError(0);
 							cTotalVCth0 += cVCth0;
 							cTotalVCth0Error += cVCth0 * cVCth0;
@@ -447,6 +584,7 @@ namespace ICCalib{
 						else{
 							cVCth0 = cChannel->VCth0();
 						}
+
 						UInt_t cOffset = cChannel->Offset();
 						TString label( Form( "[%02X] %05.1f#pm%5.2f   %02X", cChannelId, cVCth0, cVCthError, cOffset )); 
 						TLegend *cL = cChannelId %2 ? cLegend0 : cLegend1;
@@ -470,6 +608,7 @@ namespace ICCalib{
 			}
 		}
 	}
+
 	void ScurveAnalyser::PrintScurveHistogramDisplayPads(){
 
 		UInt_t cGroupId(0);
@@ -490,7 +629,7 @@ namespace ICCalib{
 				if( cPad ){
 					cPad->cd();
 					TString cRegInfo;
-					if( fScanType == SINGLEVCTHSCAN ){
+					if( (fScanType == SINGLEVCTHSCAN) | (fScanType == DELAYSCAN) ){
 
 						UInt_t cVplus = fCbcRegMap->GetValue( cFeId, cCbcId, 0, 0x0B );
 						UInt_t cPage(0x00), cAddr(0x0F);
@@ -498,7 +637,16 @@ namespace ICCalib{
 						UInt_t cMask = 1 << 6;
 						cTPEnable &= cMask;
 						UInt_t cTPPot = fCbcRegMap->GetValue( cFeId, cCbcId, 0, 0x0D );
-						cRegInfo = Form( "Vplus%02XTP%02XPot%02X", cVplus, cTPEnable, cTPPot );
+						if (fScanType == SINGLEVCTHSCAN){
+							cRegInfo = Form( "Vplus%02XTP%02XPot%02X", cVplus, cTPEnable, cTPPot );
+						}
+						else if (fScanType == DELAYSCAN) {
+
+							UInt_t cDelay = fCbcRegMap->GetValue( cFeId, cCbcId, 0, 0x0E );
+							cRegInfo = Form( "Vplus%02XTP%02XPot%02XDelay%02X", cVplus, cTPEnable, cTPPot, cDelay );
+
+						}
+
 					}
 					cPad->Print( Form( "%s/%sFE%uCBC%uTestGroup%d%s.eps", fOutputDir.Data(), getScanId().Data(), cFeId, cCbcId, cGroupId, cRegInfo.Data() ) );
 				}
@@ -565,6 +713,31 @@ namespace ICCalib{
 			}
 		}
 	}
+
+	void ScurveAnalyser::SetGain(){ //fb
+		for( UInt_t cFeId=0; cFeId < fNFe; cFeId++ ){
+
+			for( UInt_t cCbcId=0; cCbcId< fNCbc; cCbcId++ ){
+				UInt_t cVplus(0);
+				Int_t cN(0);
+				Float_t cSum(0);
+				CbcInfo *cCbcInfo = fResult.getCbcInfo( cFeId, cCbcId );
+				std::map<UInt_t, TGraphErrors *> *cMap = cCbcInfo->GetGraphGain();
+				std::map<UInt_t, TGraphErrors *>::iterator cIt = cMap->begin();
+				for( ; cIt != cMap->end(); cIt++ ){
+					//TGraphErrors *cG = cIt->second;
+					//cG->Fit( "pol1", "Q0" );
+					//cG->Fit( "pol1", "Q", "", 1, 0xFF );
+					//cSum += cG->GetFunction( "pol1" )->Eval( fTargetVCth );
+					cN++;
+				}
+				if( cN != 0 ) cVplus = (UInt_t) ( cSum / cN );
+				cCbcInfo->SetVplus( cVplus );
+			}
+		}
+
+	}
+
 	void ScurveAnalyser::SetScurveHistogramDisplayPad( UInt_t pFeId, UInt_t pCbcId, TPad *pPad ){
 
 		UInt_t cNpad = fGroupMap->size()+1;
@@ -597,6 +770,24 @@ namespace ICCalib{
 			fResult.SetVplusVsVCth0GraphDisplayPad( pFeId, cCbcId, (TPad *)pPad->GetPad( ++i ) );
 		}
 	}
+
+	void ScurveAnalyser::SetGainGraphDisplayPad( UInt_t pFeId, TPad *pPad ){
+
+			CalibrationResult::const_iterator cItFe = fResult.find( pFeId );
+
+			const FeInfo &cFeInfo = cItFe->second;
+			UInt_t cNcbc = cFeInfo.size();
+			if( cNcbc == 2 ){
+				pPad->Divide( 2, 1 );
+			}
+			FeInfo::const_iterator cItCbc = cFeInfo.begin();
+			UInt_t i(0);
+			for( ; cItCbc != cFeInfo.end(); cItCbc++ ){
+				UInt_t cCbcId = cItCbc->first;
+				fResult.SetGainGraphDisplayPad( pFeId, cCbcId, (TPad *)pPad->GetPad( ++i ) );
+			}
+		}
+
 	TH1F * ScurveAnalyser::createScurveHistogram( UInt_t pFeId, UInt_t pCbcId, UInt_t pChannelId ){
 
 		unsigned int color= pChannelId/16%8 + 2;
@@ -657,7 +848,11 @@ namespace ICCalib{
 		}
 		else if( fScanType == SINGLEVCTHSCAN ){
 
-			cType = Form( "Single scan" );
+			cType = Form( "Single Scan" );
+		}
+		else if (fScanType == DELAYSCAN) {
+			UInt_t cDelay = fCbcRegMap->GetValue( 0, 0, 0, 0x0E );
+			cType = Form( "Delay Scan %02X" , cDelay);
 		}
 		return cType;
 	}
@@ -681,6 +876,11 @@ namespace ICCalib{
 		else if( fScanType == SINGLEVCTHSCAN ){
 
 			cType = Form( "SingleScan" );
+		}
+
+		else if (fScanType == DELAYSCAN) {
+			UInt_t cDelay = fCbcRegMap->GetValue( 0, 0, 0, 0x0E );
+			cType = Form( "DelayScan0x%02X", cDelay );
 		}
 		return cType;
 	}
